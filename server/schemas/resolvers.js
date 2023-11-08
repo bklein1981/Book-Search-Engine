@@ -3,21 +3,22 @@ const { signToken, AuthenticationError } = require('../utils/auth');
 
 const resolvers = {
   Query: {
-    me: async (parent, { username }) => {
-      if (!username) {
-        throw new AuthenticationError("Cannot find a user with this username")
+
+    me: async (parent, args, context) => {
+      if (context.user) {
+        const user = await User.findOne({ _id: context.user._id });
+        return user;
       }
-      const foundUser = await User.findOne({ username: username });
-      return foundUser
-    }
+      throw AuthenticationError;
+    },
   },
 
   Mutation: {
     //New user
     addUser: async (parent, { username, email, password }) => {
-      const newUser = await User.create({ username, email, password })
-      const token = signToken(newUser)
-      return { token, newUser };
+      const user = await User.create({ username, email, password })
+      const token = signToken(user)
+      return { token, user };
     },
 
     // login
@@ -34,32 +35,31 @@ const resolvers = {
       return { token, user }
     },
     // saveBook
-    saveBook: async (parent, { username, newBook}) => {
-      const savedBook = await User.findOneAndUpdate(
-        { username: username },
-        { $push: { savedBooks: newBook } },
+    saveBook: async (parent, { newBook }, context) => {
+      const updateUser = await User.findOneAndUpdate(
+        { _id: context.user._id },
+        { $addToSet: { savedBooks: newBook } },
         {
           new: true,
-          useFindAndModify: false
+
         }
       );
-      return savedBook
+      return updateUser
     },
 
     // deleteBook
-    removeBook: async (parent, { bookId }) => {
-      const updatedUser = await User.findOneAndUpdate(
-        { 'savedBooks.bookId': bookId},
-        { $pull: { savedBooks: bookId } },
-        {
-          new: true,
-          useFindAndModify: false
-        }
-      );
-      return updatedUser
+    removeBook: async (parent, { bookId }, context) => {
+      if (context.user) {
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $pull: { savedBooks: bookId } },
+          {
+            new: true
+          }
+        );
+        return updatedUser;
+      }
     }
-
-  }
-};
-
-module.exports = resolvers;
+  },
+}
+  module.exports = resolvers;
