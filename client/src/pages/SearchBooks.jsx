@@ -5,7 +5,6 @@ import Auth from '../utils/auth';
 
 //import SAVE_BOOK mutation
 import { SAVE_BOOK } from '../utils/mutations';
-import Auth from '../utils/auth';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 import { searchGoogleBooks } from '../utils/API';
 
